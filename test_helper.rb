@@ -1,7 +1,6 @@
 module TestHelper
   def test_works_with_sample_input
-    assert_equal described_class.call(described_class.sample_input),
-                 described_class.sample_output
+    assert_equal described_class.test, described_class::SAMPLE_OUTPUT
   end
 
   private

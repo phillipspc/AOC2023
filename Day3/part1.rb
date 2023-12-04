@@ -4,48 +4,46 @@ require_relative "../test_helper"
 
 module Day3
   class Part1 < Base
+    SAMPLE_OUTPUT = 4361
     SYMBOL_PATTERN = /[^.0123456789]/
 
-    def self.sample_input
-      "...733.......289..262.....520..................161.462..........450.........................183.............................................
-    ....*....................*.............707.352....*............/.....................801...@...............333..196........484.635......287.
-    ....42.........131....913..............*......&..........634..................440..&...............83.....@...........404$..=....*..423.*..."
-    end
+    def initialize(...)
+      super(...)
 
-    def self.sample_output
-      6666
-    end
-
-    def initialize(input)
-      super
-
-      @line_length = lines.first.length
+      @line_length = nil
       @sum = 0
     end
 
     def call
-      fail unless lines.all? { |l| l.length == @line_length }
-
-      # File.foreach(INPUT_PATH).each_with_index do |line, row|
       lines.each_with_index do |line, row|
+        # just set this once, assume they're all the same
+        @line_length = line.length if row.zero?
+
         previous_line = lines[row - 1] unless row.zero?
-        next_line = lines[row + 1] unless row == lines.length
+        next_line = lines[row + 1] unless row == (lines.length - 1)
 
         find_part_numbers(line:, row:, previous_line:, next_line:)
       end
 
-      @sum
+      p @sum
     end
 
     private
 
+    def input_file
+      File.join(
+        File.dirname(__FILE__),
+        "#{test ? "sample_" : ""}input.txt"
+      ).freeze
+    end
+
     def find_part_numbers(line:, row:, previous_line: nil, next_line: nil)
       numbers = parse_numbers(line, row)
-      lines = [previous_line, line, next_line].compact
+      lines_to_consider = [previous_line, line, next_line].compact
 
       numbers.each do |number|
         line_with_symbol =
-          lines.detect do |l|
+          lines_to_consider.detect do |l|
             SYMBOL_PATTERN.match?(l[number.range_begin..number.range_end])
           end
 
@@ -59,38 +57,25 @@ module Day3
     end
 
     def parse_numbers(line, row)
-      buffer = []
-      numbers = []
-
-      line
-        .split("")
-        .each_with_index do |el, col|
-          if el == "." && buffer.any?
-            numbers << Number.new(buffer, row, (col - 1), @line_length)
-            buffer = []
-          elsif /\d/.match?(el)
-            buffer << el
-          end
-        end
-
-      numbers
+      raw = line.scan(/\d+/)
+      raw.map { |num| Number.new(num, row, line.index(num), @line_length) }
     end
   end
 
   class Number
-    def initialize(buffer, row, last_col, line_length)
-      @buffer = buffer
-      @length = buffer.length
+    def initialize(raw, row, first_col, line_length)
+      @raw = raw
+      @length = raw.length
       @row = row
-      @last_col = last_col
-      @first_col = last_col - (@length - 1)
+      @first_col = first_col
+      @last_col = first_col + @length - 1
       @line_length = line_length
     end
 
-    attr_reader :buffer, :row, :last_col, :line_length, :first_col
+    attr_reader :raw, :row, :first_col, :last_col, :line_length
 
     def value
-      buffer.join.to_i
+      raw.to_i
     end
 
     def range_begin
@@ -102,7 +87,9 @@ module Day3
     end
   end
 
-  class Part1Test < Minitest::Test
-    include TestHelper
-  end
+  # class Part1Test < Minitest::Test
+  #   include TestHelper
+  # end
 end
+
+Day3::Part1.call

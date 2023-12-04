@@ -1,19 +1,19 @@
 class Base
-  def self.call(input)
-    new(input).call
+  def self.call
+    new.call
   end
 
-  def initialize(input)
-    @input = input
+  def self.test
+    new(test: true).call
   end
 
-  attr_reader :input
-
-  private
-
-  def lines
-    @lines ||= input.split("\n").map(&:strip)
+  def initialize(test: false)
+    @test = test
+    @lines = []
+    File.foreach(input_file) { |line| lines << line.gsub("\n", "") }
   end
+
+  attr_reader :test, :lines
 end
 
 # template:

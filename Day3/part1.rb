@@ -47,28 +47,42 @@ module Day3
             SYMBOL_PATTERN.match?(l[number.range_begin..number.range_end])
           end
 
-        if line_with_symbol
-          p number.value
-          p line_with_symbol[number.range_begin..number.range_end]
-          p "---------"
-          @sum += number.value
-        end
+        @sum += number.value if line_with_symbol
       end
     end
 
     def parse_numbers(line, row)
-      raw = line.scan(/\d+/)
-      raw.map { |num| Number.new(num, row, line.index(num), @line_length) }
+      buffer = []
+      numbers = []
+
+      line
+        .split("")
+        .each_with_index do |el, col|
+          if /[^\d]/.match?(el) && buffer.any?
+            numbers << Number.new(buffer, row, (col - 1), @line_length)
+            buffer = []
+          elsif /\d/.match?(el)
+            buffer << el
+          end
+        end
+
+      if buffer.any?
+        numbers << Number.new(buffer, row, (@line_length - 1), @line_length)
+      end
+
+      fail if line.scan(/\d+/).count != numbers.count
+
+      numbers
     end
   end
 
   class Number
-    def initialize(raw, row, first_col, line_length)
-      @raw = raw
+    def initialize(buffer, row, last_col, line_length)
+      @raw = buffer.join("")
       @length = raw.length
       @row = row
-      @first_col = first_col
-      @last_col = first_col + @length - 1
+      @last_col = last_col
+      @first_col = last_col - (@length - 1)
       @line_length = line_length
     end
 
@@ -87,9 +101,7 @@ module Day3
     end
   end
 
-  # class Part1Test < Minitest::Test
-  #   include TestHelper
-  # end
+  class Part1Test < Minitest::Test
+    include TestHelper
+  end
 end
-
-Day3::Part1.call

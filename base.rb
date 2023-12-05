@@ -1,3 +1,4 @@
+require "debug"
 class Base
   def self.call
     new.call
@@ -14,6 +15,13 @@ class Base
   end
 
   attr_reader :test, :lines
+
+  def input_file
+    File.join(
+      (self.class.to_s.split("::").first),
+      "#{test ? "sample_" : ""}input.txt"
+    ).freeze
+  end
 end
 
 # template:

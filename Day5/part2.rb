@@ -19,6 +19,7 @@ module Day5
     def call
       @input = nil
       humidity_to_location_map.submaps.detect do |submap|
+        debugger
         input_range =
           submap.deep_input_ranges.detect do |ir|
             seed_ranges.detect { |sr| sr.overlap?(ir) }
@@ -31,14 +32,16 @@ module Day5
 
       # p "got an input: #{@input}"
 
-      seed_to_soil_map
-        .call(@input)
-        .then { |n| soil_to_fertilizer_map.call(n) }
-        .then { |n| fertilizer_to_water_map.call(n) }
-        .then { |n| water_to_light_map.call(n) }
-        .then { |n| light_to_temperature_map.call(n) }
-        .then { |n| temperature_to_humidity_map.call(n) }
-        .then { |n| humidity_to_location_map.call(n) }
+      seed_to_soil_map.deep_output(@input)
+
+      # seed_to_soil_map
+      #   .call(@input)
+      #   .then { |n| soil_to_fertilizer_map.call(n) }
+      #   .then { |n| fertilizer_to_water_map.call(n) }
+      #   .then { |n| water_to_light_map.call(n) }
+      #   .then { |n| light_to_temperature_map.call(n) }
+      #   .then { |n| temperature_to_humidity_map.call(n) }
+      #   .then { |n| humidity_to_location_map.call(n) }
     end
 
     private
@@ -130,28 +133,21 @@ module Day5
         lines
           .map do |line|
             output_start, input_start, count = line.split(" ").map(&:to_i)
-            Submap.new(
-              output_start:,
-              input_start:,
-              count:,
-              is_last: name == "seed-to-soil map:",
-              parent_map:
-            )
+            Submap.new(output_start:, input_start:, count:, name:, parent_map:)
           end
           .sort_by(&:output_start)
       @parent_map = parent_map
-      # fill_in_default_submaps
+      fill_in_default_submaps
     end
 
     attr_reader :submaps, :parent_map, :name
 
-    def call(input)
-      debugger
-      # p "calling #{name} with #{input}"
-      submaps.each do |submap|
-        next unless submap.covers?(input)
-
+    def deep_output(input)
+      submap = submaps.detect { |submap| submap.covers?(input) }
+      if submap.is_bottom
         submap.output(input)
+      else
+        submap.parent_map.deep_output(input)
       end
     end
 
@@ -176,7 +172,7 @@ module Day5
               output_start: start,
               input_start: start,
               count: count,
-              is_last: name == "seed-to-soil map:",
+              name:,
               parent_map:
             )
 
@@ -185,29 +181,23 @@ module Day5
         end
 
       @submaps += defaults
-      @submaps = submaps.sort_by(&:input_start)
+      @submaps = submaps.sort_by(&:output_start)
     end
   end
 
   class Submap
-    def initialize(
-      output_start:,
-      input_start:,
-      count:,
-      is_last:,
-      parent_map: nil
-    )
+    def initialize(output_start:, input_start:, count:, name:, parent_map: nil)
       @output_start = output_start
       @input_start = input_start
       @count = count
-      @is_last = is_last
+      @name = name
       @parent_map = parent_map
     end
 
-    attr_reader :output_start, :input_start, :count, :is_last, :parent_map
+    attr_reader :output_start, :input_start, :count, :name, :parent_map
 
     def deep_input_ranges(constraint = nil)
-      if is_last
+      if is_top
         [constraint ? input_range.overlap(constraint) : input_range]
       else
         submaps = parent_map.submaps_for(input_range)
@@ -219,6 +209,14 @@ module Day5
           .uniq
           .compact
       end
+    end
+
+    def is_top?
+      name == "soil-to-fertilizer map:"
+    end
+
+    def is_bottom?
+      name == "humidity-to-location map:"
     end
 
     def covers?(input)
@@ -247,4 +245,4 @@ module Day5
   end
 end
 
-p Day5::Part2.call
+# p Day5::Part2.call
